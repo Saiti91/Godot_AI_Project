@@ -79,4 +79,7 @@ public class Board
 
         throw new InvalidOperationException("Impossible d'ajouter le jeton : aucune case libre trouvée.");
     }
+
+    public bool IsInside(int column, int row) => IsInRange(column, _maxColumn) && IsInRange(row, _maxRow);
+    
 }
