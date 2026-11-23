@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net8.0</TargetFramework>
+        <!-- Pas de runtime .NET 8 installe : on autorise l'execution sur 10/11 -->
+        <RollForward>Major</RollForward>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RootNamespace>Connect4.ConsoleApp</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\Solution_Core\Connect4.Core\Connect4.Core.csproj" />
+    </ItemGroup>
+
+</Project>
