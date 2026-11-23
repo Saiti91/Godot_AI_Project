@@ -1,0 +1,68 @@
+{
+  "format": 1,
+  "restore": {
+    "D:\\Cours 4RVJV_2026-2027\\Godot_AI_Project\\Solution\\Godot_Project\\Godot_Project_Library\\Godot_Project_Library.csproj": {}
+  },
+  "projects": {
+    "D:\\Cours 4RVJV_2026-2027\\Godot_AI_Project\\Solution\\Godot_Project\\Godot_Project_Library\\Godot_Project_Library.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "D:\\Cours 4RVJV_2026-2027\\Godot_AI_Project\\Solution\\Godot_Project\\Godot_Project_Library\\Godot_Project_Library.csproj",
+        "projectName": "Godot_Project_Library",
+        "projectPath": "D:\\Cours 4RVJV_2026-2027\\Godot_AI_Project\\Solution\\Godot_Project\\Godot_Project_Library\\Godot_Project_Library.csproj",
+        "packagesPath": "C:\\Users\\Stephane\\.nuget\\packages\\",
+        "outputPath": "D:\\Cours 4RVJV_2026-2027\\Godot_AI_Project\\Solution\\Godot_Project\\Godot_Project_Library\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\Stephane\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "framework": "net8.0",
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "framework": "net8.0",
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Users\\Stephane\\.dotnet\\sdk\\8.0.428/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}
