@@ -3,18 +3,18 @@ namespace Connect4.Core;
 /// <summary>
 /// Plateau du puissance 4. La ligne 0 est en bas.
 /// </summary>
-public class Board
+public class Board : IReadOnlyBoard
 {
     private readonly int _maxColumn;
     private readonly int _maxRow;
-    private readonly Cell[,] _board;
+    private readonly CellPlayer[,] _board;
     private int _chipCount;
 
     public Board(int columns, int rows)
     {
         _maxColumn = columns;
         _maxRow = rows;
-        _board = new Cell[columns, rows];
+        _board = new CellPlayer[columns, rows];
     }
 
     /// <summary>Nombre de colonnes.</summary>
@@ -46,7 +46,7 @@ public class Board
         return IsInRange(column, _maxColumn);
     }
 
-    public Cell GetCellContent(int column, int row)
+    public CellPlayer GetCellContent(int column, int row)
     {
         EnsureInRange(column, _maxColumn, nameof(column));
         EnsureInRange(row, _maxRow, nameof(row));
@@ -57,19 +57,19 @@ public class Board
     public bool ColumnFreeForPlay(int column)
     {
         EnsureInRange(column, _maxColumn, nameof(column));
-        return _board[column, _maxRow - 1] == Cell.Empty;
+        return _board[column, _maxRow - 1] == CellPlayer.Empty;
     }
 
     /// <summary>Fait tomber un jeton dans la colonne et renvoie la ligne où il atterrit.</summary>
-    public int AddChip(int column, Cell player)
+    public int AddChip(int column, CellPlayer player)
     {
         EnsureInRange(column, _maxColumn, nameof(column));
-        if (player == Cell.Empty) throw new ArgumentException("Impossible de jouer une case vide.", nameof(player));
+        if (player == CellPlayer.Empty) throw new ArgumentException("Impossible de jouer une case vide.", nameof(player));
         if (!ColumnFreeForPlay(column)) throw new InvalidOperationException($"La colonne {column} est pleine.");
 
         for (int i = 0; i < _maxRow; i++)
         {
-            if (GetCellContent(column, i) == Cell.Empty)
+            if (GetCellContent(column, i) == CellPlayer.Empty)
             {
                 _board[column, i] = player;
                 _chipCount += 1;

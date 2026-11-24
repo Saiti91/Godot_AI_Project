@@ -1,6 +1,6 @@
 ﻿namespace Connect4.Core;
 
-public enum Cell
+public enum CellPlayer
 {
     Empty = 0,
     Player1 = 1,

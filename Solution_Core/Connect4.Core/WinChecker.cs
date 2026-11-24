@@ -2,7 +2,7 @@
 
 public static class WinChecker
 {
-    private static bool CheckColumn(Board board, int column, Cell player)
+    private static bool CheckColumn(Board board, int column, CellPlayer player)
     {
         int chipCount = 0;
         for (int i = 0; i < board.Rows; i++)
@@ -23,7 +23,7 @@ public static class WinChecker
 
         return false;
     }
-    private static bool CheckRow(Board board, int row, Cell player)
+    private static bool CheckRow(Board board, int row, CellPlayer player)
     {
         int chipCount = 0;
         for (int i = 0; i < board.Columns; i++)
@@ -44,7 +44,7 @@ public static class WinChecker
 
         return false;
     }
-    private static bool CheckRisingDiagonal(Board board, int column, int row, Cell player)
+    private static bool CheckRisingDiagonal(Board board, int column, int row, CellPlayer player)
     {
         int c = column;
         int r = row;
@@ -75,7 +75,7 @@ public static class WinChecker
         }
         return false;
     }
-    private static bool CheckDescendingDiagonal(Board board, int column, int row, Cell player)
+    private static bool CheckDescendingDiagonal(Board board, int column, int row, CellPlayer player)
     {
         int c = column;
         int r = row;
@@ -113,8 +113,8 @@ public static class WinChecker
     /// </summary>
     public static bool IsWinningMove(Board board, int column, int row)
     {
-        Cell player = board.GetCellContent(column, row);
-        if (player == Cell.Empty)
+        CellPlayer player = board.GetCellContent(column, row);
+        if (player == CellPlayer.Empty)
         {
             throw new ArgumentException($"La case ({column}, {row}) est vide : aucun jeton à vérifier.");
         }
