@@ -27,15 +27,25 @@ public partial class Main : Node2D
 		_status = GetNode<Label>("Status");                 // le Label enfant nommé "Status"
 		_status.Position = new Vector2(0, Rows * CellSize + 15);
 
-		if (PlayAgainstAi)
+		try
 		{
-			// res://... est un chemin Godot : on le convertit en vrai chemin pour .NET
-			string path = ProjectSettings.GlobalizePath(ModelPath);
-			_game = new Game(Columns, Rows, aiPlayer: CellPlayer.Player2, trainAi: false, modelPath: path);
+			if (PlayAgainstAi)
+			{
+				// res://... est un chemin Godot : on le convertit en vrai chemin pour .NET
+				string path = ProjectSettings.GlobalizePath(ModelPath);
+				_game = new Game(Columns, Rows, aiPlayer: CellPlayer.Player2, trainAi: false, modelPath: path);
+			}
+			else
+			{
+				_game = new Game(Columns, Rows);
+			}
 		}
-		else
+		catch (System.Exception e)
 		{
-			_game = new Game(Columns, Rows);
+			// Modèle absent ou incompatible : on l'affiche à l'écran au lieu de planter au premier clic
+			_status.Text = "Impossible de démarrer : " + e.Message;
+			GD.PrintErr(e.Message);
+			return;
 		}
 
 		Refresh();
@@ -47,6 +57,11 @@ public partial class Main : Node2D
 		if (@event is not InputEventMouseButton mouse || !mouse.Pressed || mouse.ButtonIndex != MouseButton.Left)
 		{
 			return;     // on ne s'intéresse qu'au clic gauche
+		}
+
+		if (_game == null)
+		{
+			return;     // la partie n'a pas pu démarrer (voir le message affiché)
 		}
 		
 		// Partie finie : un clic relance une partie
