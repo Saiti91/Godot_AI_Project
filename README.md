@@ -1,71 +1,113 @@
-# Godot_AI_Project – Puissance 4
+# Godot_AI_Project – Puissance 4 avec IA
 
-Puissance 4 dont la logique est écrite en C# pur (sans dépendance à un moteur), puis affichée par plusieurs « visualisations » : une console et Godot.
+Un Puissance 4 dont **toute la logique est en C# pur** (aucun moteur), avec une **IA qui apprend par renforcement** (Q-learning), affiché par deux « visualisations » : une **console** et **Godot**.
+
+> 👉 **Tu travailles sur Godot ?** Lis directement le guide pas à pas : [Affichage_Godot/GUIDE_GODOT.md](Affichage_Godot/GUIDE_GODOT.md)
 
 ## Architecture
 
 ```
 Godot_AI_Project/
-├── Solution_Core/              Logique du jeu (+ IA à venir)
-│   ├── Connect4.Core.slnx
-│   └── Connect4.Core/          Class Library .NET 8
-├── Console_Runner/             Visualisation console : test, débogage, entraînement IA
-│   ├── Connect4.Console.slnx   (contient aussi le Core, pour tout ouvrir dans l'IDE)
-│   └── Connect4.Console/       Console App, référence Connect4.Core
+├── Solution_Core/
+│   ├── Connect4.Core/        Les règles du jeu + le point d'entrée Game   (Class Library .NET 8)
+│   └── Connect4.ML/          L'IA (Q-learning), ne connaît rien du jeu     (Class Library .NET 8)
+├── Console_Runner/
+│   └── Connect4.Console/     Version console : jouer, entraîner l'IA       (Console App)
 └── Affichage_Godot/
-    └── connect-4/              Projet Godot 4.7 .NET, visualisation principale
+    └── connect-4/            Version Godot 4.7 .NET                        (projet Godot)
 ```
 
-Règle de base : **toute la logique vit dans `Connect4.Core`**. La console et Godot ne font qu'afficher l'état du jeu et transmettre les entrées du joueur. Le Core ne contient aucune notion graphique (pas de couleur, de position à l'écran ni de caractère) : chaque visualisation choisit son propre rendu.
+**Qui utilise qui :**
 
 ```
- Entrée joueur ──► Game.Play(colonne) ──► MoveResult (coup accepté / refusé)
-                         │
-                         └──► événements ──► DiscPlaced, TurnChanged, GameEnded, GameReset
-                                              (la console / Godot s'abonnent et affichent)
+ Console ──┐
+           ├──►  Connect4.Core (Game)  ──►  Connect4.ML
+ Godot  ───┘
 ```
 
-## Connect4.Core – la logique
+- La console et Godot ne connaissent **que `Game`**. Ils affichent et transmettent les clics / saisies, rien d'autre.
+- **Seul `Game` utilise le ML** (consigne du cours). Le ML ne connaît pas le Core : il manipule des états (`string`), des actions (`int`) et des récompenses (`double`).
+- Le Core ne contient **aucun affichage** (pas de couleur, de position à l'écran, de `Console.WriteLine`).
 
-| Fichier | Visibilité | Rôle |
-|---|---|---|
-| `Game.cs` | public | **Point d'entrée unique.** `Play(colonne)` joue un coup, `Reset()` relance une partie. Expose l'état (`CurrentPlayer`, `Status`, `Winner`, `WinningLine`, `History`) et les événements `DiscPlaced`, `TurnChanged`, `GameEnded`, `GameReset`. |
-| `IReadOnlyBoard.cs` | public | Vue en lecture seule du plateau, la seule que voient les affichages et les joueurs IA : `board[col, row]`, `CanDrop`, `NextFreeRow`, `LegalColumns`, `IsFull`. |
-| `Board.cs` | internal | Implémentation de la grille 7×6 : `Drop`, `Undo`, `Clone`, `Clear`. `Undo` et `Clone` servent à l'IA pour simuler des coups. |
-| `WinChecker.cs` | internal | Cherche un alignement de 4 (horizontal, vertical, deux diagonales) autour du dernier jeton posé et renvoie les cases gagnantes. |
-| `Disc.cs` | public | Contenu d'une case : `None`, `Red`, `Yellow`. `Opponent()` donne l'adversaire. |
-| `Cell.cs` | public | Coordonnée `(Column, Row)`. **La ligne 0 est en bas** du plateau. |
-| `GameStatus.cs` | public | `GameStatus` (`InProgress`, `Won`, `Draw`) et `MoveResult` (`Ok`, `OutOfRange`, `ColumnFull`, `GameOver`). |
-| `IPlayer.cs` | public | Interface d'un joueur automatique (`ChooseColumn`) et `RandomPlayer`, une IA qui joue au hasard. Les humains n'implémentent pas `IPlayer` : l'affichage appelle directement `Game.Play`. |
+## Utiliser `Game` (console comme Godot)
 
-## Connect4.Console – visualisation console
+C'est la seule classe à connaître.
+
+```csharp
+// Deux humains, plateau classique 7 x 6
+var game = new Game();
+
+// Contre l'IA (elle joue O / Player2), avec un modèle déjà entraîné
+var game = new Game(7, 6, aiPlayer: CellPlayer.Player2, trainAi: false, modelPath: "chemin/vers/connect4_7x6.txt");
+```
+
+| Paramètre du constructeur | Rôle |
+|---|---|
+| `column`, `row` | taille du plateau (7 x 6 par défaut) |
+| `aiPlayer` | `Player1` ou `Player2` pour jouer contre l'IA, `Empty` (défaut) pour deux humains |
+| `trainAi` | `true` : entraîne l'IA au démarrage (long !) ; `false` : charge `modelPath` |
+| `trainingEpisodes` | nombre de parties d'entraînement si `trainAi` est vrai |
+| `modelPath` | fichier du modèle : chargé si `trainAi = false`, sauvegardé si `trainAi = true` |
+
+| Membre | Rôle |
+|---|---|
+| `Play(colonne)` | coup d'un humain (colonnes numérotées **à partir de 0**). Renvoie un `MoveResult` |
+| `IsAiTurn` | vrai quand c'est à l'IA de jouer |
+| `PlayAiTurn()` | fait jouer l'IA |
+| `Board` | le plateau en lecture seule : `Columns`, `Rows`, `GetCellContent(colonne, ligne)` |
+| `LastMove` | la dernière case jouée `(Column, Row)`, ou `null` |
+| `CurrentPlayer`, `State`, `Winner`, `AiPlayer` | à qui le tour, partie en cours / gagnée / nulle, le gagnant, le joueur IA |
+| `Reset()` | nouvelle partie (l'IA garde ce qu'elle a appris) |
+
+`MoveResult` : `Ok`, `InvalidColumn` (hors plateau), `ColumnFull`, `GameOver`, `NotYourTurn` (c'est au tour de l'IA).
+
+> ⚠️ **La ligne 0 est en BAS du plateau** (là où tombent les premiers jetons).
+
+## Connect4.Core – les règles
 
 | Fichier | Rôle |
 |---|---|
-| `Program.cs` | Menu (JvJ, J vs IA aléatoire, IA vs IA), boucle de jeu, lecture des entrées et abonnement aux événements du `Game`. |
-| `ConsoleRenderer.cs` | Tout le rendu texte : grille, symboles `X` / `O`, couleurs, surlignage de la ligne gagnante. |
+| `Game.cs` | **point d'entrée** : tours, victoire, nul, joueur IA (appels au ML) |
+| `Board.cs` / `IReadOnlyBoard.cs` | la grille ; l'extérieur ne la voit qu'en lecture seule |
+| `WinChecker.cs` | détecte un alignement de 4 autour du dernier jeton posé |
+| `CellPlayer.cs` | contenu d'une case : `Empty`, `Player1`, `Player2` |
+| `StateEncoder.cs` | traduit le plateau en état (`string`) pour le ML, du point de vue du joueur qui doit jouer |
+| `Connect4Environment.cs` | terrain d'entraînement de l'IA : l'adversaire (aléatoire) fait partie de l'environnement |
+| `AiEvaluation.cs` | résultat d'une évaluation de l'IA (victoires, nuls, défaites) |
 
-Lancer :
+## Connect4.ML – l'IA
+
+| Fichier | Rôle |
+|---|---|
+| `QLearningAgent.cs` | **Q-learning tabulaire** : `Init`, `Train`, `Predict`, `Load` (+ `Save`) |
+| `IEnvironment.cs` | ce qu'un environnement doit fournir pour l'entraînement : `Reset`, `AvailableActions`, `Step` |
+
+**Principe :** l'IA joue des milliers de parties contre un adversaire aléatoire. Après chaque coup, elle met à jour la valeur du coup joué : `Q(s,a) ← Q(s,a) + α [r + γ max Q(s',·) − Q(s,a)]`. Récompenses : +1 victoire, −1 défaite, 0 sinon. Réglages (dans `Game`) : α = 0,2, γ = 0,95, ε = 0,1.
+
+**Le modèle** est un fichier texte : une ligne par position rencontrée, `état;valeur_colonne_0;valeur_colonne_1;…`.
+
+## Connect4.Console – la version console
 
 ```bash
 dotnet run --project Console_Runner/Connect4.Console
 ```
 
-## Affichage_Godot/connect-4 – visualisation Godot
+Menu : **1.** joueur contre joueur · **2.** joueur contre IA (affiche ce que l'IA pense de chaque colonne) · **3.** entraîner l'IA (progression et taux de victoire, puis sauvegarde).
 
-À venir : référence vers `Connect4.Core`, scène du plateau, scène du jeton, conversion `Cell` → position Godot (attention : l'axe Y de Godot pointe vers le bas).
+Les modèles sont rangés dans `Console_Runner/Connect4.Console/bin/Debug/net8.0/models/` :
+`connect4_7x6.txt` (plateau classique) et `connect4_5x4.txt` (petit plateau). **C'est la console qui fabrique le modèle que Godot charge.**
 
 ## Notes techniques
 
-- **Cibles .NET.** Le Core cible `net8.0`, le runtime qu'utilise Godot 4 : ne pas le monter de version. La console cible aussi `net8.0`, avec `RollForward=Major` pour tourner sur un runtime plus récent (10 ou 11) si le 8 n'est pas installé.
-- **`global.json`.** Les deux fichiers demandent un SDK 8 minimum (`rollForward: latestMajor`), donc tout SDK récent convient.
-- **`.slnx` et ligne de commande.** La CLI `dotnet` ne lit les `.slnx` qu'à partir du SDK 9.0.200. En cas de doute, lancer les `.csproj` directement.
-- **`.gitignore`.** Le fichier à la racine exclut `bin/`, `obj/`, `.idea/`, `.vs/` et `.godot/`.
+- Tout cible `net8.0` (le runtime de Godot 4) : ne pas monter de version. La console a `RollForward=Major` pour tourner sur un runtime plus récent.
+- La CLI `dotnet` ne lit les `.slnx` qu'à partir du SDK 9.0.200 : en cas de doute, lancer les `.csproj`.
+- Le `.gitignore` exclut `bin/`, `obj/`, `.idea/`, `.vs/`, `.godot/`.
 
 ## Planning
 
 | Date | Étape |
 |---|---|
-| 23 nov. | Logique C# + console, début de la version Godot (joueurs humains) |
-| 25 nov. | Intégration du joueur IA + entraînement, finalisation Godot |
+| 23 nov. | Logique C# + console |
+| 24 nov. | Hackathon packages |
+| 25 nov. | IA (Q-learning) + entraînement, version Godot |
 | 16 déc. | Soutenance |
