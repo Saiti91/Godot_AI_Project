@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RootNamespace>Connect4.ML</RootNamespace>
+    </PropertyGroup>
+
+    <!-- Aucune référence au Core : c'est le Core (Game) qui utilise le ML, pas l'inverse. -->
+
+</Project>

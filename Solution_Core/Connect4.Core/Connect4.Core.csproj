@@ -7,4 +7,8 @@
         <RootNamespace>Connect4.Core</RootNamespace>
     </PropertyGroup>
 
+    <ItemGroup>
+        <ProjectReference Include="..\Connect4.ML\Connect4.ML.csproj" />
+    </ItemGroup>
+
 </Project>
