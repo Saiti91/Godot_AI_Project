@@ -71,6 +71,20 @@ public class QLearningAgent
         return bestAction;
     }
 
+    /// <summary>Nombre d'états rencontrés pendant l'entraînement (taille de la table Q).</summary>
+    public int StateCount => _qTable.Count;
+
+    /// <summary>Copie des valeurs Q d'un état, ou null si l'état n'a jamais été vu.</summary>
+    public double[]? GetQValues(string state)
+    {
+        if (_qTable.TryGetValue(state, out var values))
+        {
+            return values.ToArray();
+        }
+
+        return null;
+    }
+
     /// <summary>Remplace les valeurs Q d'un état (utile pour les tests).</summary>
     public void SetQValues(string state, double[] values)
     {
