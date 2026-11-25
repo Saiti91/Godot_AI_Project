@@ -1,0 +1,10 @@
+[gd_scene format=3 uid="uid://b8s0o087suau5"]
+
+[ext_resource type="Script" uid="uid://bahalgdc5ud75" path="res://Main.cs" id="1_ig7tw"]
+
+[node name="Main" type="Node2D" unique_id=195764833]
+script = ExtResource("1_ig7tw")
+
+[node name="Status" type="Label" parent="." unique_id=733820781]
+offset_right = 40.0
+offset_bottom = 23.0
