@@ -1,23 +1,29 @@
-﻿namespace Connect4.ML;
+﻿using System.Globalization;
 
+namespace Connect4.ML;
+
+/// <summary>
+/// Agent Q-learning tabulaire. Ne connaît rien du jeu : il manipule des états (string),
+/// des actions (int) et des récompenses (double) fournis par un IEnvironment.
+/// </summary>
 public class QLearningAgent
 {
     private Dictionary<string, double[]> _qTable = new Dictionary<string, double[]>();
 
     private int _nbPossibleActions = 7;
 
-    //le pas d'apprentissage
+    // Pas d'apprentissage (α)
     private double _alpha;
 
-    //le facteur d'actualisation
+    // Facteur d'actualisation (γ)
     private double _gamma;
 
-    //le taux d'exploration
+    // Taux d'exploration (ε)
     private double _epsilon;
 
-    //Générateur
     private Random _random = new Random();
 
+    /// <summary>Crée un agent vierge (table vide) avec ses hyperparamètres.</summary>
     public void Init(int nbPossibleActions, double alpha, double gamma, double epsilon, int? seed = null)
     {
         _nbPossibleActions = nbPossibleActions;
@@ -36,14 +42,18 @@ public class QLearningAgent
         }
     }
 
+    /// <summary>
+    /// Renvoie l'action gloutonne parmi les actions possibles.
+    /// État inconnu : toutes les valeurs valent 0. Égalité : la première action de la liste.
+    /// </summary>
     public int Predict(string state, IReadOnlyList<int> actions)
     {
         if (actions.Count == 0)
         {
-            throw new ArgumentException(nameof(actions));
+            throw new ArgumentException("Aucune action possible.", nameof(actions));
         }
 
-        _qTable.TryGetValue(state, out var values); // null si l'état est inconnu
+        _qTable.TryGetValue(state, out var values);
 
         int bestAction = actions[0];
         double bestValue = values?[bestAction] ?? 0;
@@ -51,7 +61,6 @@ public class QLearningAgent
         foreach (var action in actions)
         {
             double q = values?[action] ?? 0;
-            // si q est strictement plus grand que bestValue : mettre à jour les deux
             if (q > bestValue)
             {
                 bestValue = q;
@@ -62,6 +71,7 @@ public class QLearningAgent
         return bestAction;
     }
 
+    /// <summary>Remplace les valeurs Q d'un état (utile pour les tests).</summary>
     public void SetQValues(string state, double[] values)
     {
         if (values.Length != _nbPossibleActions)
@@ -74,74 +84,39 @@ public class QLearningAgent
 
     private double[] GetOrCreateValues(string state)
     {
-        // si l'état est dans la table (TryGetValue) :
-        // renvoyer son tableau
-        //
-        // sinon :
-        // créer un tableau de _nbPossibleActions zéros
-        // le ranger dans la table pour cet état
-        // le renvoyer
-
-        if (_qTable.TryGetValue(state, out var value))
+        if (_qTable.TryGetValue(state, out var values))
         {
-            return value;
-        }
-        else
-        {
-            var values = new double[_nbPossibleActions];
-            _qTable[state] = values;
             return values;
         }
+
+        values = new double[_nbPossibleActions];
+        _qTable[state] = values;
+        return values;
     }
 
+    /// <summary>ε-greedy : action au hasard avec la probabilité ε, gloutonne sinon.</summary>
     private int ChooseAction(string state, IReadOnlyList<int> actions)
     {
-        // tirer un nombre au hasard entre 0 et 1
-        //
-        // si ce nombre est < _epsilon :      ← exploration
-        //     choisir un index au hasard entre 0 et (nombre d'actions - 1)
-        // renvoyer l'action à cet index dans la liste
-        //
-        // sinon :                            ← exploitation
-        //     renvoyer Predict(state, actions)
-        double random = _random.NextDouble();
+        double roll = _random.NextDouble();
 
-        if (random<_epsilon)
+        if (roll < _epsilon)
         {
             int index = _random.Next(actions.Count);
             return actions[index];
         }
-        else
-        {
-            return Predict(state, actions);
-        }
+
+        return Predict(state, actions);
     }
 
+    /// <summary>
+    /// Q-learning : Q(s,a) ← Q(s,a) + α [r + γ max Q(s',·) − Q(s,a)].
+    /// Si s' est terminal, la cible est la récompense seule.
+    /// </summary>
     public void Train(IEnvironment env, int nbEpisode)
     {
-        // pour chaque épisode :
-        // state = env.Reset()
-        // done = false
-        //
-        // tant que la partie n'est pas finie :
-        // actions = env.AvailableActions()
-        // action  = ChooseAction(state, actions)          ← ε-greedy
-        //
-        //     (nextState, reward, done) = env.Step(action)
-        //
-        // si done :
-        // cible = reward
-        // sinon :
-        // cible = reward + γ × (max des Q de nextState, parmi ses actions possibles)
-        //
-        // q = valeurs de state, à l'index action          ← avec GetOrCreateValues
-        //     q = q + α × (cible − q)
-        //
-        // state = nextState
-
         for (int episode = 0; episode < nbEpisode; episode++)
         {
-            string state = env.Reset(); 
+            string state = env.Reset();
             bool done = false;
 
             while (!done)
@@ -157,7 +132,6 @@ public class QLearningAgent
                 }
                 else
                 {
-                    // ↓ le bloc va ici, à la place de l'ancienne ligne 159
                     var nextActions = env.AvailableActions();
                     int bestNext = Predict(nextState, nextActions);
                     _qTable.TryGetValue(nextState, out var nextValues);
@@ -166,11 +140,82 @@ public class QLearningAgent
                     cible = reward + _gamma * maxNext;
                 }
 
-                // mise à jour de Q : à toi (récupérer le tableau de state, modifier la case [action])
                 var values = GetOrCreateValues(state);
                 values[action] += _alpha * (cible - values[action]);
+
                 state = nextState;
             }
         }
+    }
+
+    /// <summary>
+    /// Sauvegarde la table Q dans un fichier texte : une ligne par état, "état;v0;v1;...".
+    /// Les nombres utilisent toujours le point décimal (InvariantCulture).
+    /// </summary>
+    public void Save(string path)
+    {
+        var lines = new List<string>(_qTable.Count);
+
+        foreach (var (state, values) in _qTable)
+        {
+            var parts = new string[values.Length + 1];
+            parts[0] = state;
+            for (int i = 0; i < values.Length; i++)
+            {
+                parts[i + 1] = values[i].ToString("R", CultureInfo.InvariantCulture);
+            }
+
+            lines.Add(string.Join(";", parts));
+        }
+
+        string? directory = Path.GetDirectoryName(path);
+        if (!string.IsNullOrEmpty(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        File.WriteAllLines(path, lines);
+    }
+
+    /// <summary>
+    /// Recharge une table Q sauvegardée par Save et remplace la table actuelle.
+    /// À appeler après Init : α, γ, ε et le nombre d'actions viennent d'Init, pas du fichier.
+    /// </summary>
+    public void Load(string path)
+    {
+        if (!File.Exists(path))
+        {
+            throw new FileNotFoundException($"Aucun modèle trouvé à l'emplacement : {path}", path);
+        }
+
+        var table = new Dictionary<string, double[]>();
+        string[] lines = File.ReadAllLines(path);
+
+        for (int lineNumber = 0; lineNumber < lines.Length; lineNumber++)
+        {
+            string line = lines[lineNumber];
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                continue;
+            }
+
+            string[] parts = line.Split(';');
+            if (parts.Length != _nbPossibleActions + 1)
+            {
+                throw new InvalidDataException(
+                    $"Ligne {lineNumber + 1} : {parts.Length - 1} valeurs trouvées, {_nbPossibleActions} attendues. " +
+                    "Le fichier ne correspond pas au nombre d'actions donné à Init.");
+            }
+
+            var values = new double[_nbPossibleActions];
+            for (int i = 0; i < _nbPossibleActions; i++)
+            {
+                values[i] = double.Parse(parts[i + 1], CultureInfo.InvariantCulture);
+            }
+
+            table[parts[0]] = values;
+        }
+
+        _qTable = table;
     }
 }
